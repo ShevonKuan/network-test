@@ -20,7 +20,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		pkg.Download()
+		threads, _ := cmd.Flags().GetInt("multi-threads")
+		size, _ := cmd.Flags().GetString("size")
+		proxy, _ := cmd.Flags().GetString("proxy")
+		if threads <= 0 {
+			threads = 1
+		}
+		pkg.Download(threads, size, proxy)
 	},
 }
 
@@ -35,5 +41,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// speedtestCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	speedtestCmd.Flags().IntP("multi-threads", "t", 1, "number of threadings")
+	speedtestCmd.Flags().StringP("size", "s", "10", "size of the test file to download. Allowed 1/5/10/100 MB")
+	speedtestCmd.Flags().StringP("proxy", "p", "", "specify Proy to use. Format: http://ip:port or socks5://ip:port")
 }
