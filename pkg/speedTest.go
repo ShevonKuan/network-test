@@ -48,6 +48,7 @@ func downloadFile(url string) {
 		Total:  resp.ContentLength,
 	}
 	counter := &WriteCounter{}
+
 	if _, err := io.Copy(ioutil.Discard, io.TeeReader(downloader, counter)); err != nil {
 		log.Fatalln(err)
 	}
@@ -58,6 +59,7 @@ var wg sync.WaitGroup
 func Download() {
 	task := []string{}
 	task = append(task, "http://cachefly.cachefly.net/100mb.test")
+	log.Println("🍌 Speedtest Initialized")
 	for _, k := range task {
 		wg.Add(1)
 		downloadFile(k)
