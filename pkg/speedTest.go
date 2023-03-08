@@ -10,23 +10,25 @@ import (
 	"time"
 )
 
+var ()
+
 type Downloader struct {
 	io.Reader
 	Total int64
 }
 type WriteCounter struct {
-	Total     uint64
-	LastTotal uint64
+	Total     int64
+	LastTotal int64
 	LastTime  time.Time
-	Speed     uint64
+	Speed     float64
 }
 
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n := len(p)
-	wc.Total += uint64(n)
-	elapsed := time.Since(wc.LastTime).Seconds()
-	if elapsed >= 1 {
-		speed := uint64(float64(wc.Total-wc.LastTotal) / elapsed)
+	wc.Total += int64(n)
+	elapsed := float64(time.Since(wc.LastTime).Milliseconds()) / 1000.0
+	if elapsed >= 0.5 {
+		speed := float64(wc.Total-wc.LastTotal) / elapsed / 1024 / 1024
 		wc.LastTotal = wc.Total
 		wc.LastTime = time.Now()
 		wc.Speed = speed
@@ -49,20 +51,38 @@ func downloadFile(url string) {
 	}
 	counter := &WriteCounter{}
 
+	// echo speed per second
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	go func() {
+		for {
+			fmt.Printf("\r👀 Download Speed: %.3f MB/s", counter.Speed)
+			if counter.Total == downloader.Total {
+				return
+			}
+		}
+	}()
+
+	// main function
+	start := time.Now()
 	if _, err := io.Copy(ioutil.Discard, io.TeeReader(downloader, counter)); err != nil {
 		log.Fatalln(err)
 	}
+	elapsed := time.Since(start).Milliseconds()
+	fmt.Print("\r")
+	log.Printf("🍌 Speedtest Finished\t[Speed=%.2f MB/s]", float64(downloader.Total)/float64(elapsed)/1024.0/1024.0*1000.0)
 }
 
 var wg sync.WaitGroup
 
 func Download() {
 	task := []string{}
-	task = append(task, "http://cachefly.cachefly.net/100mb.test")
+	task = append(task, "http://cachefly.cachefly.net/10mb.test")
+	task = append(task, "http://cachefly.cachefly.net/10mb.test")
 	log.Println("🍌 Speedtest Initialized")
 	for _, k := range task {
 		wg.Add(1)
-		downloadFile(k)
+		go downloadFile(k)
 	}
 	wg.Wait()
 }
